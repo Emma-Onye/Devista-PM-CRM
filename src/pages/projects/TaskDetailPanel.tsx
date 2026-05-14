@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
-import { X, Loader as Loader2, Calendar, SquareCheck as CheckSquare, Plus, FileText, Phone, Mail, MessageSquare, Send } from 'lucide-react';
+import { X, Loader as Loader2, Calendar, SquareCheck as CheckSquare, Plus, FileText, Phone, Mail, MessageSquare, Send, Link2, Unlink, CircleAlert as AlertCircle, ChevronDown } from 'lucide-react';
 import type { Block } from '@blocknote/core';
 import { supabase } from '../../lib/supabase';
 import { useWorkspaceStore } from '../../stores/workspace-store';
@@ -14,7 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
 import { cn } from '../../lib/utils';
-import type { Task, Activity, ActivityType, TaskStatus, PriorityLevel } from '../../lib/database.types';
+import type { Task, Activity, ActivityType, TaskStatus, PriorityLevel, TaskDependency } from '../../lib/database.types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -24,6 +24,17 @@ interface SubtaskRow extends Task {
 
 interface ActivityRow extends Activity {
   profiles: { display_name: string } | null;
+}
+
+interface DependencyRow extends TaskDependency {
+  blocking_task: { id: string; title: string; status: TaskStatus } | null;
+  blocked_task: { id: string; title: string; status: TaskStatus } | null;
+}
+
+interface ProjectTaskOption {
+  id: string;
+  title: string;
+  status: TaskStatus;
 }
 
 interface MemberOption {
@@ -82,6 +93,8 @@ export function TaskDetailPanel({ taskId, projectId, onClose }: Props) {
   const [comment, setComment] = useState('');
   const [newSubtask, setNewSubtask] = useState('');
   const [addingSubtask, setAddingSubtask] = useState(false);
+  const [addingBlocker, setAddingBlocker] = useState(false);
+  const [blockerSearch, setBlockerSearch] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
   const descSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -166,6 +179,54 @@ export function TaskDetailPanel({ taskId, projectId, onClose }: Props) {
       return data as MemberOption[];
     },
   });
+
+  // ── Dependencies ──────────────────────────────────────────────────────────
+
+  const { data: dependencies = [] } = useQuery<DependencyRow[]>({
+    queryKey: ['task-dependencies', taskId],
+    enabled: !!taskId && !!activeWorkspace?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('task_dependencies')
+        .select(`
+          *,
+          blocking_task:tasks!task_dependencies_blocking_task_id_fkey(id, title, status),
+          blocked_task:tasks!task_dependencies_blocked_task_id_fkey(id, title, status)
+        `)
+        .eq('workspace_id', activeWorkspace!.id)
+        .or(`blocking_task_id.eq.${taskId},blocked_task_id.eq.${taskId}`);
+      if (error) throw error;
+      return data as DependencyRow[];
+    },
+  });
+
+  const { data: projectTasks = [] } = useQuery<ProjectTaskOption[]>({
+    queryKey: ['project-tasks-options', projectId],
+    enabled: !!projectId && !!activeWorkspace?.id && addingBlocker,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('tasks')
+        .select('id, title, status')
+        .eq('project_id', projectId)
+        .eq('workspace_id', activeWorkspace!.id)
+        .neq('id', taskId)
+        .order('title');
+      return (data ?? []) as ProjectTaskOption[];
+    },
+  });
+
+  // Tasks already in a dependency relationship with current task
+  const blockedByIds = new Set(dependencies.filter((d) => d.blocked_task_id === taskId).map((d) => d.blocking_task_id));
+  const blockingIds = new Set(dependencies.filter((d) => d.blocking_task_id === taskId).map((d) => d.blocked_task_id));
+
+  // Simple circular-dependency check: a task would create a cycle if it is already
+  // downstream of the current task (i.e., current task already blocks it)
+  const eligibleBlockers = projectTasks.filter(
+    (t) => !blockedByIds.has(t.id) && !blockingIds.has(t.id)
+  );
+  const filteredBlockers = eligibleBlockers.filter((t) =>
+    t.title.toLowerCase().includes(blockerSearch.toLowerCase())
+  );
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
@@ -277,6 +338,38 @@ export function TaskDetailPanel({ taskId, projectId, onClose }: Props) {
       );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['subtasks', taskId] }),
+  });
+
+  const addBlockerMutation = useMutation({
+    mutationFn: async (blockingTaskId: string) => {
+      const { error } = await (supabase as any)
+        .from('task_dependencies')
+        .insert({
+          workspace_id: activeWorkspace!.id,
+          blocking_task_id: blockingTaskId,
+          blocked_task_id: taskId,
+          dependency_type: 'finish_to_start',
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['task-dependencies', taskId] });
+      qc.invalidateQueries({ queryKey: ['project-dependencies', projectId] });
+      setAddingBlocker(false);
+      setBlockerSearch('');
+    },
+  });
+
+  const removeDepMutation = useMutation({
+    mutationFn: async (depId: string) => {
+      const { error } = await (supabase as any)
+        .from('task_dependencies').delete().eq('id', depId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['task-dependencies', taskId] });
+      qc.invalidateQueries({ queryKey: ['project-dependencies', projectId] });
+    },
   });
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -501,6 +594,130 @@ export function TaskDetailPanel({ taskId, projectId, onClose }: Props) {
                     onClick={() => { setAddingSubtask(false); setNewSubtask(''); }}>
                     Cancel
                   </Button>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Dependencies */}
+            <div className="space-y-3">
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Dependencies</p>
+
+              {/* Blocked by */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-gray-600 flex items-center gap-1">
+                    <Link2 className="w-3 h-3" /> Blocked by
+                    <span className="text-gray-400 font-normal ml-0.5">
+                      ({dependencies.filter((d) => d.blocked_task_id === taskId).length})
+                    </span>
+                  </p>
+                  {!addingBlocker && (
+                    <Button size="sm" variant="ghost"
+                      className="h-6 text-xs text-indigo-600 hover:text-indigo-700 gap-0.5 px-1"
+                      onClick={() => setAddingBlocker(true)}>
+                      <Plus className="w-3 h-3" /> Add Blocker
+                    </Button>
+                  )}
+                </div>
+
+                {dependencies.filter((d) => d.blocked_task_id === taskId).map((dep) => (
+                  <div key={dep.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 group">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="flex-1 text-xs text-gray-700 truncate">
+                      {dep.blocking_task?.title ?? '—'}
+                    </span>
+                    {dep.blocking_task && (
+                      <span className={cn(
+                        'text-[10px] px-1.5 py-0.5 rounded border shrink-0',
+                        dep.blocking_task.status === 'done'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : dep.blocking_task.status === 'in_progress'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-gray-100 text-gray-600 border-gray-200',
+                      )}>
+                        {dep.blocking_task.status.replace('_', ' ')}
+                      </span>
+                    )}
+                    <button
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500"
+                      onClick={() => removeDepMutation.mutate(dep.id)}
+                    >
+                      <Unlink className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Add blocker dropdown */}
+                {addingBlocker && (
+                  <div className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden">
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100">
+                      <input
+                        autoFocus
+                        className="flex-1 text-xs outline-none placeholder:text-gray-400"
+                        placeholder="Search tasks…"
+                        value={blockerSearch}
+                        onChange={(e) => setBlockerSearch(e.target.value)}
+                      />
+                      <button className="text-gray-400 hover:text-gray-600"
+                        onClick={() => { setAddingBlocker(false); setBlockerSearch(''); }}>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto">
+                      {filteredBlockers.length === 0 ? (
+                        <p className="text-xs text-gray-400 px-3 py-2 italic">
+                          {blockerSearch ? 'No matching tasks' : 'No eligible tasks'}
+                        </p>
+                      ) : (
+                        filteredBlockers.map((t) => (
+                          <button
+                            key={t.id}
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 text-left transition-colors"
+                            onClick={() => addBlockerMutation.mutate(t.id)}
+                          >
+                            <span className="flex-1 text-xs text-gray-700 truncate">{t.title}</span>
+                            <span className="text-[10px] text-gray-400 shrink-0">
+                              {t.status.replace('_', ' ')}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Blocking (read-only) */}
+              {dependencies.filter((d) => d.blocking_task_id === taskId).length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-gray-600 flex items-center gap-1">
+                    <ChevronDown className="w-3 h-3" /> Blocking
+                    <span className="text-gray-400 font-normal ml-0.5">
+                      ({dependencies.filter((d) => d.blocking_task_id === taskId).length})
+                    </span>
+                  </p>
+                  {dependencies.filter((d) => d.blocking_task_id === taskId).map((dep) => (
+                    <div key={dep.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0" />
+                      <span className="flex-1 text-xs text-gray-600 truncate">
+                        {dep.blocked_task?.title ?? '—'}
+                      </span>
+                      {dep.blocked_task && (
+                        <span className={cn(
+                          'text-[10px] px-1.5 py-0.5 rounded border shrink-0',
+                          dep.blocked_task.status === 'done'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : dep.blocked_task.status === 'in_progress'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-gray-100 text-gray-600 border-gray-200',
+                        )}>
+                          {dep.blocked_task.status.replace('_', ' ')}
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

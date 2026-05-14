@@ -33,6 +33,7 @@ import {
 import { cn } from '../../lib/utils';
 import { STATUS_CONFIG, PRIORITY_DOT, PRIORITY_LABEL } from './ProjectsPage';
 import { TaskKanbanBoard } from './TaskKanbanBoard';
+import { GanttTimeline } from './GanttTimeline';
 import type { Project, Task, ProjectStatus, PriorityLevel, TaskStatus, PriorityLevel as PL } from '../../lib/database.types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -421,14 +422,9 @@ export function ProjectDetailPage() {
             </div>
           </TabsContent>
 
-          {/* Timeline Tab — placeholder */}
-          <TabsContent value="timeline" className="flex-1 overflow-auto m-0">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <Clock className="w-8 h-8 text-gray-300 mb-2 mx-auto" />
-                <p className="text-sm text-gray-400">Timeline — coming soon</p>
-              </div>
-            </div>
+          {/* Timeline Tab */}
+          <TabsContent value="timeline" className="flex-1 overflow-hidden m-0 flex flex-col">
+            <GanttTimeline projectId={id!} />
           </TabsContent>
 
           {/* Documents Tab */}
