@@ -6,10 +6,11 @@ import {
   ArrowLeft, Loader as Loader2, FolderKanban, Calendar,
   SquareCheck as CheckSquare, Settings, List, LayoutGrid, Clock,
   Handshake, Trash2, TriangleAlert as AlertTriangle,
-  ChevronUp, ChevronDown, ChevronsUpDown,
+  ChevronUp, ChevronDown, ChevronsUpDown, FileText, Plus,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useWorkspaceStore } from '../../stores/workspace-store';
+import { useAuthStore } from '../../stores/auth-store';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -26,6 +27,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '../../components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '../../components/ui/dialog';
 import { cn } from '../../lib/utils';
 import { STATUS_CONFIG, PRIORITY_DOT, PRIORITY_LABEL } from './ProjectsPage';
 import { TaskKanbanBoard } from './TaskKanbanBoard';
@@ -72,9 +76,12 @@ export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { activeWorkspace, myRole } = useWorkspaceStore();
+  const { user } = useAuthStore();
   const qc = useQueryClient();
 
   const [archiveConfirm, setArchiveConfirm] = useState(false);
+  const [newDocDialog, setNewDocDialog] = useState(false);
+  const [newDocTitle, setNewDocTitle] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('status');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -137,6 +144,20 @@ export function ProjectDetailPage() {
     },
   });
 
+  const { data: projectDocs = [] } = useQuery<{ id: string; title: string; updated_at: string; creator: { display_name: string; avatar_url: string | null } | null }[]>({
+    queryKey: ['project-documents', id],
+    enabled: !!id && !!activeWorkspace?.id,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('documents')
+        .select('id, title, updated_at, creator:profiles!documents_created_by_fkey(display_name, avatar_url)')
+        .eq('project_id', id)
+        .eq('workspace_id', activeWorkspace!.id)
+        .order('updated_at', { ascending: false });
+      return data ?? [];
+    },
+  });
+
   // ── Mutations ─────────────────────────────────────────────────────────────
 
   const archiveMutation = useMutation({
@@ -167,6 +188,30 @@ export function ProjectDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['project', id] });
       qc.invalidateQueries({ queryKey: ['projects', activeWorkspace?.id] });
+    },
+  });
+
+  const createDocMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('documents')
+        .insert({
+          workspace_id: activeWorkspace!.id,
+          title: newDocTitle.trim() || 'Untitled Document',
+          project_id: id,
+          created_by: user!.id,
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return data as { id: string };
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['project-documents', id] });
+      qc.invalidateQueries({ queryKey: ['documents', activeWorkspace?.id] });
+      setNewDocDialog(false);
+      setNewDocTitle('');
+      navigate(`/documents/${data.id}`);
     },
   });
 
@@ -386,13 +431,59 @@ export function ProjectDetailPage() {
             </div>
           </TabsContent>
 
-          {/* Documents Tab — placeholder */}
+          {/* Documents Tab */}
           <TabsContent value="documents" className="flex-1 overflow-auto m-0">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <FolderKanban className="w-8 h-8 text-gray-300 mb-2 mx-auto" />
-                <p className="text-sm text-gray-400">Documents — coming soon</p>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-gray-900">Documents</h3>
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white h-7 text-xs"
+                  onClick={() => setNewDocDialog(true)}
+                >
+                  <Plus className="w-3 h-3" /> New Document
+                </Button>
               </div>
+              {projectDocs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-200 rounded-xl text-center">
+                  <FileText className="w-7 h-7 text-gray-300 mb-2" />
+                  <p className="text-sm text-gray-400">No documents yet</p>
+                </div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
+                  {projectDocs.map((doc) => (
+                    <button
+                      key={doc.id}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left group"
+                      onClick={() => navigate(`/documents/${doc.id}`)}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center shrink-0">
+                        <FileText className="w-3.5 h-3.5 text-sky-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-sky-700 transition-colors">
+                          {doc.title}
+                        </p>
+                      </div>
+                      {doc.creator && (
+                        <div className="w-6 h-6 rounded-full bg-sky-100 flex items-center justify-center overflow-hidden shrink-0"
+                          title={doc.creator.display_name}>
+                          {doc.creator.avatar_url ? (
+                            <img src={doc.creator.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-sky-700 text-[9px] font-bold">
+                              {doc.creator.display_name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <span className="text-xs text-gray-400 shrink-0">
+                        {format(new Date(doc.updated_at), 'MMM d, yyyy')}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -486,6 +577,37 @@ export function ProjectDetailPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* New Document Dialog */}
+      <Dialog open={newDocDialog} onOpenChange={setNewDocDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New Document</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Label>Title</Label>
+            <Input
+              className="mt-1.5"
+              placeholder="Untitled Document"
+              value={newDocTitle}
+              onChange={(e) => setNewDocTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') createDocMutation.mutate(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewDocDialog(false)}>Cancel</Button>
+            <Button
+              className="bg-sky-600 hover:bg-sky-700"
+              disabled={createDocMutation.isPending}
+              onClick={() => createDocMutation.mutate()}
+            >
+              {createDocMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />}
+              Create Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Archive confirmation */}
       <AlertDialog open={archiveConfirm} onOpenChange={setArchiveConfirm}>

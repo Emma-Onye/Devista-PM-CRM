@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { X, Loader as Loader2, Calendar, SquareCheck as CheckSquare, Plus, FileText, Phone, Mail, MessageSquare, Send } from 'lucide-react';
+import type { Block } from '@blocknote/core';
 import { supabase } from '../../lib/supabase';
 import { useWorkspaceStore } from '../../stores/workspace-store';
 import { useAuthStore } from '../../stores/auth-store';
 import { useBoardStore, type BoardTask } from '../../stores/board-store';
+import { BlockEditor } from '../../components/editor/BlockEditor';
 import { Button } from '../../components/ui/button';
-import { Textarea } from '../../components/ui/textarea';
 import { Separator } from '../../components/ui/separator';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -78,12 +79,11 @@ export function TaskDetailPanel({ taskId, projectId, onClose }: Props) {
 
   const [title, setTitle] = useState('');
   const [titleEditing, setTitleEditing] = useState(false);
-  const [description, setDescription] = useState('');
-  const [descEditing, setDescEditing] = useState(false);
   const [comment, setComment] = useState('');
   const [newSubtask, setNewSubtask] = useState('');
   const [addingSubtask, setAddingSubtask] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
+  const descSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Task query ────────────────────────────────────────────────────────────
 
@@ -100,11 +100,10 @@ export function TaskDetailPanel({ taskId, projectId, onClose }: Props) {
     },
   });
 
-  // Sync title/description from loaded task
+  // Sync title from loaded task
   useEffect(() => {
     if (task) {
       setTitle(task.title);
-      setDescription((task.description_json as { text?: string } | null)?.text ?? '');
     }
   }, [task?.id]);
 
@@ -197,14 +196,12 @@ export function TaskDetailPanel({ taskId, projectId, onClose }: Props) {
     }
   };
 
-  const commitDescription = () => {
-    setDescEditing(false);
-    const val = description.trim();
-    const prev = (task?.description_json as { text?: string } | null)?.text ?? '';
-    if (val !== prev) {
-      patchTask.mutate({ description_json: val ? { text: val } : null });
-    }
-  };
+  const handleDescriptionChange = useCallback((blocks: Block[]) => {
+    if (descSaveTimer.current) clearTimeout(descSaveTimer.current);
+    descSaveTimer.current = setTimeout(() => {
+      patchTask.mutate({ description_json: blocks as unknown as Task['description_json'] });
+    }, 2000);
+  }, [patchTask]);
 
   const addCommentMutation = useMutation({
     mutationFn: async (text: string) => {
@@ -424,24 +421,13 @@ export function TaskDetailPanel({ taskId, projectId, onClose }: Props) {
             {/* Description */}
             <div className="space-y-1.5">
               <p className="text-xs text-gray-400 font-medium">Description</p>
-              {descEditing ? (
-                <Textarea
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  onBlur={commitDescription}
-                  className="text-sm resize-none"
-                  autoFocus
-                  placeholder="Add a description…"
+              <div className="rounded-md border border-gray-100 bg-gray-50 min-h-[80px] [&_.bn-editor]:!px-3 [&_.bn-editor]:!py-2 [&_.bn-container]:!bg-transparent">
+                <BlockEditor
+                  key={task.id}
+                  initialContent={task.description_json as Block[] | null}
+                  onChange={handleDescriptionChange}
                 />
-              ) : (
-                <button
-                  className="w-full text-left text-sm text-gray-700 hover:text-gray-900 rounded-md px-2 py-1.5 bg-gray-50 hover:bg-gray-100 transition-colors min-h-[60px] leading-relaxed"
-                  onClick={() => setDescEditing(true)}
-                >
-                  {description || <span className="text-gray-300 italic">Add a description…</span>}
-                </button>
-              )}
+              </div>
             </div>
 
             <Separator />

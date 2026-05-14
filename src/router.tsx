@@ -19,6 +19,7 @@ import { DealsPage } from './pages/deals/DealsPage';
 import { DealDetailPage } from './pages/deals/DealDetailPage';
 import { PipelineSettingsPage } from './pages/settings/PipelineSettingsPage';
 import { DocumentsPage } from './pages/documents/DocumentsPage';
+import { DocumentDetailPage } from './pages/documents/DocumentDetailPage';
 import { AutomationsPage } from './pages/automations/AutomationsPage';
 import { SettingsLayout } from './pages/settings/SettingsLayout';
 import { GeneralSettingsPage } from './pages/settings/GeneralSettingsPage';
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
           { path: '/deals', element: <DealsPage /> },
           { path: '/deals/:id', element: <DealDetailPage /> },
           { path: '/documents', element: <DocumentsPage /> },
+          { path: '/documents/:id', element: <DocumentDetailPage /> },
           { path: '/automations', element: <AutomationsPage /> },
           {
             path: '/settings',
