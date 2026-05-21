@@ -553,7 +553,7 @@ export function TimelinePage() {
 
           {/* Rows */}
           <div style={{ paddingTop: 4 }}>
-            {rows.map((row, i) => {
+            {rows.map((row) => {
               if (row.type === 'group') {
                 const isCollapsed = collapsedProjects.has(row.projectId);
                 const color = projectColorMap.get(row.projectId) ?? '#6b7280';

@@ -160,7 +160,6 @@ export function DashboardPage() {
   });
 
   const [projectsQ, tasksQ, dealsQ, stagesQ, activitiesQ] = results;
-  const isLoading = results.some((r) => r.isLoading);
 
   // ── Derived data ─────────────────────────────────────────────────────────
 

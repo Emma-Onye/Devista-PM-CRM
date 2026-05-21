@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Bell, LogOut, User, ChevronDown, ArrowLeftRight, Check, Loader as Loader2 } from 'lucide-react';
+import { useCallback } from 'react';
+import { Bell, LogOut, User, ChevronDown, ArrowLeftRight, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { supabase } from '../../lib/supabase';
@@ -38,12 +38,12 @@ interface Notification {
   created_at: string;
 }
 
-const TYPE_ROUTES: Record<string, (id: string) => string> = {
-  project: (id) => `/projects/${id}`,
-  task: (id) => `/tasks`,
-  contact: (id) => `/contacts/${id}`,
-  deal: (id) => `/deals/${id}`,
-  document: (id) => `/documents/${id}`,
+const TYPE_ROUTES: Record<string, (entityId: string) => string> = {
+  project: (entityId) => `/projects/${entityId}`,
+  task: () => `/tasks`,
+  contact: (entityId) => `/contacts/${entityId}`,
+  deal: (entityId) => `/deals/${entityId}`,
+  document: (entityId) => `/documents/${entityId}`,
 };
 
 // ── TopBar ────────────────────────────────────────────────────────────────────

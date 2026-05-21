@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, FolderKanban, SquareCheck as CheckSquare, Kanban,
   SquareChartGantt as GanttChartSquare, Users, Building2, Handshake,
-  FileText, Zap, Settings, ChevronLeft, ChevronRight, Plus, ChevronsUpDown, X, Menu,
+  FileText, Zap, Settings, ChevronLeft, ChevronRight, Plus, ChevronsUpDown, X,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useWorkspaceStore } from '../../stores/workspace-store';
@@ -75,8 +75,6 @@ export function Sidebar() {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname, setMobileMenuOpen]);
-
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   return (
     <>

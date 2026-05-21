@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import {
   Zap, Plus, Search, ToggleLeft, Clock,
   Loader as Loader2, Trash2, ArrowRight,
-  History, ChevronLeft, ChevronRight, X,
+  History, ChevronLeft, ChevronRight,
   CircleCheck as CheckCircle2, CircleX as XCircle,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';

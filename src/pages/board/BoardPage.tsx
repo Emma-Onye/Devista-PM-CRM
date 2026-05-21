@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, isPast } from 'date-fns';
 import {
   DragDropContext, Droppable, Draggable, type DropResult,
 } from '@hello-pangea/dnd';
 import {
-  Kanban, Plus, Calendar, SquareCheck as CheckSquare,
+  Kanban, Calendar, SquareCheck as CheckSquare,
   Loader as Loader2, Filter, X,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
