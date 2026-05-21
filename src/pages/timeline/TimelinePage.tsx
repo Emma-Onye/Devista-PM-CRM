@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   addDays, subDays, differenceInDays, startOfDay, format,
@@ -7,10 +8,11 @@ import {
 import { create } from 'zustand';
 import {
   ZoomIn, ZoomOut, Calendar, SquareChartGantt as GanttChartSquare,
-  Filter, X, ChevronDown, ChevronRight,
+  Filter, X, ChevronDown, ChevronRight, ExternalLink,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useWorkspaceStore } from '../../stores/workspace-store';
+import { TaskDetailPanel } from '../projects/TaskDetailPanel';
 import { Button } from '../../components/ui/button';
 import { cn } from '../../lib/utils';
 import type { Task, TaskDependency, PriorityLevel, Project } from '../../lib/database.types';
@@ -87,16 +89,19 @@ function strFromDate(d: Date): string { return format(d, 'yyyy-MM-dd'); }
 // ── TimelinePage ──────────────────────────────────────────────────────────────
 
 export function TimelinePage() {
+  const navigate = useNavigate();
   const { activeWorkspace } = useWorkspaceStore();
   const wsId = activeWorkspace?.id;
   const qc = useQueryClient();
   const drag = useTlDragStore();
   const gridRef = useRef<HTMLDivElement>(null);
+  const dragMoved = useRef(false);
 
   const [scale, setScale] = useState<Scale>('day');
   const [viewStart, setViewStart] = useState<Date>(() => subDays(startOfDay(new Date()), 7));
   const [filterProjectId, setFilterProjectId] = useState<string | null>(null);
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const colW = COL_WIDTH[scale];
   const TOTAL_COLS = scale === 'day' ? 90 : scale === 'week' ? 26 : 18;
@@ -272,6 +277,7 @@ export function TimelinePage() {
     mode: 'move' | 'resize-left' | 'resize-right',
   ) => {
     e.preventDefault();
+    dragMoved.current = false;
     drag.setDrag({ dragging: true, taskId, mode, startX: e.clientX, deltaX: 0 });
   }, [drag]);
 
@@ -279,11 +285,21 @@ export function TimelinePage() {
     if (!drag.dragging) return;
 
     const onMove = (e: MouseEvent) => {
-      drag.setDrag({ deltaX: e.clientX - drag.startX });
+      const dx = e.clientX - drag.startX;
+      if (Math.abs(dx) > 3) dragMoved.current = true;
+      drag.setDrag({ deltaX: dx });
     };
 
     const onUp = () => {
       if (!drag.taskId || !drag.dragging) { drag.reset(); return; }
+
+      // If user didn't actually drag, treat as a click → open task detail
+      if (!dragMoved.current) {
+        setSelectedTaskId(drag.taskId);
+        drag.reset();
+        return;
+      }
+
       const deltaDays = Math.round(pxToDays(drag.deltaX));
       if (deltaDays === 0) { drag.reset(); return; }
       const task = tasks.find((t) => t.id === drag.taskId);
@@ -519,7 +535,12 @@ export function TimelinePage() {
       </div>
 
       {/* Main layout */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Gantt area (shrinks when detail panel opens) */}
+        <div className={cn(
+          'flex flex-1 overflow-hidden transition-all duration-300 ease-in-out',
+          selectedTaskId ? 'mr-[480px]' : 'mr-0'
+        )}>
         {/* Left panel: project groups + task names */}
         <div
           className="shrink-0 border-r border-gray-200 bg-white overflow-y-auto overflow-x-hidden"
@@ -539,27 +560,39 @@ export function TimelinePage() {
                 return (
                   <div
                     key={`g-${row.projectId}`}
-                    className="flex items-center gap-2 px-2 cursor-pointer hover:bg-gray-50 select-none"
+                    className="flex items-center gap-2 px-2 hover:bg-gray-50 select-none group/row"
                     style={{ height: GROUP_ROW_HEIGHT }}
-                    onClick={() => toggleCollapse(row.projectId)}
                   >
-                    {isCollapsed
-                      ? <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      : <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                    }
-                    <span
-                      className="w-2.5 h-2.5 rounded shrink-0"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="text-xs font-semibold text-gray-700 truncate">{row.projectName}</span>
+                    <button
+                      className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => toggleCollapse(row.projectId)}
+                    >
+                      {isCollapsed
+                        ? <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        : <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      }
+                      <span
+                        className="w-2.5 h-2.5 rounded shrink-0"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="text-xs font-semibold text-gray-700 truncate">{row.projectName}</span>
+                    </button>
+                    <button
+                      className="p-1 rounded opacity-0 group-hover/row:opacity-100 hover:bg-indigo-100 text-gray-400 hover:text-indigo-600 transition-all shrink-0"
+                      title="Open project"
+                      onClick={() => navigate(`/projects/${row.projectId}`)}
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
                   </div>
                 );
               }
               return (
                 <div
                   key={row.task.id}
-                  className="flex items-center gap-2 px-3 pl-8"
+                  className="flex items-center gap-2 px-3 pl-8 cursor-pointer hover:bg-indigo-50/50 transition-colors"
                   style={{ height: ROW_HEIGHT, marginBottom: ROW_GAP }}
+                  onClick={() => setSelectedTaskId(row.task.id)}
                 >
                   <span className={cn('w-2 h-2 rounded-full shrink-0', {
                     'bg-red-500': row.task.priority === 'urgent',
@@ -567,7 +600,7 @@ export function TimelinePage() {
                     'bg-sky-400': row.task.priority === 'medium',
                     'bg-blue-300': row.task.priority === 'low',
                   })} />
-                  <span className="text-xs text-gray-700 truncate">{row.task.title}</span>
+                  <span className="text-xs text-gray-700 truncate hover:text-indigo-700 transition-colors">{row.task.title}</span>
                 </div>
               );
             })}
@@ -774,6 +807,26 @@ export function TimelinePage() {
               })}
             </div>
           </div>
+        </div>
+        </div>
+
+        {/* Detail Panel — slides in from right */}
+        <div className={cn(
+          'absolute right-0 top-0 bottom-0 w-[480px] bg-white border-l border-gray-200 shadow-xl z-20 overflow-hidden flex flex-col',
+          'transition-transform duration-300 ease-in-out',
+          selectedTaskId ? 'translate-x-0' : 'translate-x-full'
+        )}>
+          {selectedTaskId && (() => {
+            const task = tasks.find((t) => t.id === selectedTaskId);
+            if (!task) return null;
+            return (
+              <TaskDetailPanel
+                taskId={selectedTaskId}
+                projectId={task.project_id}
+                onClose={() => setSelectedTaskId(null)}
+              />
+            );
+          })()}
         </div>
       </div>
 
