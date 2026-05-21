@@ -65,37 +65,21 @@ export function SelectWorkspacePage() {
     setCreateLoading(true);
 
     const slug = slugify(newName) || 'workspace';
-    const { data: wsData, error: wsErr } = await (supabase as any)
-      .from('workspaces')
-      .insert({ name: newName, slug: `${slug}-${Date.now().toString(36)}`, created_by: user.id })
-      .select()
-      .single();
+    const uniqueSlug = `${slug}-${Date.now().toString(36)}`;
 
-    if (wsErr || !wsData) {
-      setCreateError(wsErr?.message ?? 'Failed to create workspace');
+    // Single atomic RPC call: creates workspace + owner membership + deal stages
+    const { data, error: rpcErr } = await supabase.rpc('create_workspace_with_owner', {
+      ws_name: newName,
+      ws_slug: uniqueSlug,
+    });
+
+    if (rpcErr || !data) {
+      setCreateError(rpcErr?.message ?? 'Failed to create workspace');
       setCreateLoading(false);
       return;
     }
 
-    const ws = wsData as Workspace;
-
-    await (supabase as any).from('workspace_members').insert({
-      workspace_id: ws.id,
-      user_id: user.id,
-      role: 'owner',
-      status: 'active',
-      joined_at: new Date().toISOString(),
-    });
-
-    await (supabase as any).from('deal_stages').insert([
-      { workspace_id: ws.id, name: 'Qualification', position: 0, probability: 10, color: '#6366f1' },
-      { workspace_id: ws.id, name: 'Proposal', position: 1, probability: 30, color: '#3b82f6' },
-      { workspace_id: ws.id, name: 'Negotiation', position: 2, probability: 50, color: '#f59e0b' },
-      { workspace_id: ws.id, name: 'Verbal Commit', position: 3, probability: 70, color: '#8b5cf6' },
-      { workspace_id: ws.id, name: 'Closed Won', position: 4, probability: 100, is_won: true, color: '#10b981' },
-      { workspace_id: ws.id, name: 'Closed Lost', position: 5, probability: 0, is_lost: true, color: '#ef4444' },
-    ]);
-
+    const ws = data as unknown as Workspace;
     setActiveWorkspace(ws, 'owner');
     navigate('/dashboard');
   };

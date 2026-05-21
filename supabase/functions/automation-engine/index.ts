@@ -73,15 +73,48 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Determine entity type from table name
+    const entityType = table === "tasks" ? "task" : table === "deals" ? "deal" : table;
+    const entityId = record.id as string;
+
     const results: string[] = [];
 
     for (const rule of rules as AutomationRule[]) {
       const matched = await evaluateTrigger(rule, table, record, old_record, supabase);
       if (!matched) continue;
 
-      const result = await executeAction(rule, table, record, supabase);
-      results.push(`Rule "${rule.name}": ${result}`);
-      console.log(`[automation-engine] Rule "${rule.name}" fired → ${result}`);
+      try {
+        const result = await executeAction(rule, table, record, supabase);
+        results.push(`Rule "${rule.name}": ${result}`);
+        console.log(`[automation-engine] Rule "${rule.name}" fired → ${result}`);
+
+        // Log successful run to automation_runs
+        await supabase.from("automation_runs").insert({
+          workspace_id: workspaceId,
+          automation_rule_id: rule.id,
+          triggered_by_entity_type: entityType,
+          triggered_by_entity_id: entityId,
+          status: "success",
+          result_message: result,
+          error_message: null,
+        });
+      } catch (actionErr) {
+        const errMsg = String(actionErr);
+        console.error(`[automation-engine] Rule "${rule.name}" FAILED:`, errMsg);
+
+        // Log failed run to automation_runs
+        await supabase.from("automation_runs").insert({
+          workspace_id: workspaceId,
+          automation_rule_id: rule.id,
+          triggered_by_entity_type: entityType,
+          triggered_by_entity_id: entityId,
+          status: "failed",
+          result_message: null,
+          error_message: errMsg,
+        });
+
+        results.push(`Rule "${rule.name}": FAILED — ${errMsg}`);
+      }
     }
 
     return new Response(JSON.stringify({ processed: results.length, results }), {

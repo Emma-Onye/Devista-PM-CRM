@@ -10,6 +10,7 @@ export type LifecycleStage = 'lead' | 'qualified' | 'opportunity' | 'customer' |
 export type ActivityType = 'note' | 'call' | 'email' | 'meeting' | 'task_update' | 'deal_update' | 'status_change';
 export type TriggerType = 'task_status_change' | 'deal_stage_change' | 'due_date_passed' | 'task_assigned';
 export type ActionType = 'update_field' | 'send_notification' | 'create_activity' | 'move_task';
+export type AutomationRunStatus = 'success' | 'failed';
 
 export interface Profile {
   id: string;
@@ -184,6 +185,18 @@ export interface AutomationRule {
   created_at: string;
 }
 
+export interface AutomationRun {
+  id: string;
+  workspace_id: string;
+  automation_rule_id: string;
+  triggered_by_entity_type: string;
+  triggered_by_entity_id: string;
+  status: AutomationRunStatus;
+  result_message: string | null;
+  error_message: string | null;
+  executed_at: string;
+}
+
 // Supabase DB generic type used by the client
 export type Database = {
   public: {
@@ -201,6 +214,7 @@ export type Database = {
       activities: { Row: Activity; Insert: Omit<Activity, 'id' | 'created_at'>; Update: Partial<Activity> };
       documents: { Row: Document; Insert: Omit<Document, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Document> };
       automation_rules: { Row: AutomationRule; Insert: Omit<AutomationRule, 'id' | 'created_at'>; Update: Partial<AutomationRule> };
+      automation_runs: { Row: AutomationRun; Insert: Omit<AutomationRun, 'id' | 'executed_at'>; Update: Partial<AutomationRun> };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -217,6 +231,7 @@ export type Database = {
       activity_type: ActivityType;
       trigger_type: TriggerType;
       action_type: ActionType;
+      automation_run_status: AutomationRunStatus;
     };
   };
 };

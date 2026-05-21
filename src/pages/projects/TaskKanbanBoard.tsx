@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, memo, useCallback } from 'react';
+import { useEffect, useRef, useState, memo, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, isPast } from 'date-fns';
 import {
@@ -212,7 +212,15 @@ interface ColumnProps {
 }
 
 const BoardColumn = memo(function BoardColumn({ col, projectId, onCardClick, onTaskAdded }: ColumnProps) {
-  const tasks = useBoardStore((s) => s.getColumnTasks(projectId, col.key));
+  // Select stable primitives (ID list) from the store, then derive task objects locally.
+  // Using getColumnTasks directly as a selector caused infinite re-renders because
+  // .map().filter() returns a new array reference every call, and Zustand uses Object.is().
+  const taskIds = useBoardStore((s) => s.columns[projectId]?.[col.key] ?? []);
+  const allTasks = useBoardStore((s) => s.tasks);
+  const tasks = useMemo(
+    () => taskIds.map((id) => allTasks[id]).filter(Boolean),
+    [taskIds, allTasks]
+  );
   const { activeWorkspace } = useWorkspaceStore();
   const { user } = useAuthStore();
   const qc = useQueryClient();

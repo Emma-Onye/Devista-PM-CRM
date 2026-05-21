@@ -33,42 +33,22 @@ export function OnboardingPage() {
     setLoading(true);
 
     const slug = slugify(name) || 'workspace';
+    const uniqueSlug = `${slug}-${Date.now().toString(36)}`;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: wsData, error: wsErr } = await (supabase as any)
-      .from('workspaces')
-      .insert({ name, slug: `${slug}-${Date.now().toString(36)}`, created_by: user.id })
-      .select()
-      .single();
+    // Single atomic RPC call: creates workspace + owner membership + deal stages
+    // Uses SECURITY DEFINER to bypass the chicken-and-egg RLS problem
+    const { data, error: rpcErr } = await supabase.rpc('create_workspace_with_owner', {
+      ws_name: name,
+      ws_slug: uniqueSlug,
+    });
 
-    if (wsErr || !wsData) {
-      setError(wsErr?.message ?? 'Failed to create workspace');
+    if (rpcErr || !data) {
+      setError(rpcErr?.message ?? 'Failed to create workspace');
       setLoading(false);
       return;
     }
 
-    const ws = wsData as Workspace;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('workspace_members').insert({
-      workspace_id: ws.id,
-      user_id: user.id,
-      role: 'owner',
-      status: 'active',
-      joined_at: new Date().toISOString(),
-    });
-
-    // Seed default deal stages
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('deal_stages').insert([
-      { workspace_id: ws.id, name: 'Qualification', position: 0, probability: 10, color: '#6366f1' },
-      { workspace_id: ws.id, name: 'Proposal', position: 1, probability: 30, color: '#3b82f6' },
-      { workspace_id: ws.id, name: 'Negotiation', position: 2, probability: 50, color: '#f59e0b' },
-      { workspace_id: ws.id, name: 'Verbal Commit', position: 3, probability: 70, color: '#8b5cf6' },
-      { workspace_id: ws.id, name: 'Closed Won', position: 4, probability: 100, is_won: true, color: '#10b981' },
-      { workspace_id: ws.id, name: 'Closed Lost', position: 5, probability: 0, is_lost: true, color: '#ef4444' },
-    ]);
-
+    const ws = data as unknown as Workspace;
     setActiveWorkspace(ws, 'owner');
     navigate('/dashboard');
   };
