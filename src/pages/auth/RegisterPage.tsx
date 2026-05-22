@@ -21,8 +21,24 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+    if (password.length < 10) {
+      setError('Password must be at least 10 characters.');
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setError('Password must include at least one uppercase letter.');
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      setError('Password must include at least one lowercase letter.');
+      return;
+    }
+    if (!/\d/.test(password)) {
+      setError('Password must include at least one number.');
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/~`]/.test(password)) {
+      setError('Password must include at least one special character.');
       return;
     }
     if (password !== confirmPassword) {
@@ -67,6 +83,7 @@ export function RegisterPage() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 required
+                maxLength={255}
                 autoComplete="name"
                 autoFocus
               />
@@ -80,6 +97,7 @@ export function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                maxLength={320}
                 autoComplete="email"
               />
             </div>
@@ -89,7 +107,7 @@ export function RegisterPage() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Min. 8 characters"
+                  placeholder="Min. 10 chars, upper, lower, number, special"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

@@ -73,6 +73,7 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                maxLength={320}
                 autoComplete="email"
               />
             </div>

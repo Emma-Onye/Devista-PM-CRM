@@ -78,7 +78,14 @@ export function GlobalSearch() {
       return;
     }
     setLoading(true);
-    const like = `%${q}%`;
+    // Sanitize: strip PostgREST operators to prevent filter injection via .or()
+    const sanitized = q.replace(/[%_,().\\]/g, '');
+    if (!sanitized.trim()) {
+      setResults(EMPTY);
+      setLoading(false);
+      return;
+    }
+    const like = `%${sanitized}%`;
 
     try {
       const [tasksR, projectsR, contactsR, companiesR, dealsR, docsR] = await Promise.all([

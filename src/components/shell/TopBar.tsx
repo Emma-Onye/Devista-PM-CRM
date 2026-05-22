@@ -127,6 +127,10 @@ export function TopBar({ className }: TopBarProps) {
   const grouped = groupByDate(notifications);
 
   const handleSignOut = async () => {
+    // Clear persisted workspace data to prevent tenant leakage on shared devices
+    useWorkspaceStore.getState().setActiveWorkspace(null, null);
+    useWorkspaceStore.getState().setActiveWorkspaceId(null);
+    localStorage.removeItem('vantage-workspace');
     await supabase.auth.signOut();
     navigate('/login');
   };

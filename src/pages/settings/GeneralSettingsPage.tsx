@@ -53,10 +53,23 @@ export function GeneralSettingsPage() {
     const file = e.target.files?.[0];
     if (!file || !activeWorkspace) return;
     setLogoError('');
+
+    // Validate file type and size
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setLogoError('Only PNG, JPEG, GIF, and WebP images are allowed.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError('Logo must be under 2 MB.');
+      return;
+    }
+
     setLogoUploading(true);
 
     try {
-      const ext = file.name.split('.').pop();
+      const rawExt = file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? 'png';
+      const ext = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(rawExt) ? rawExt : 'png';
       const path = `${activeWorkspace.id}/logo.${ext}`;
 
       const { error: uploadErr } = await supabase.storage
