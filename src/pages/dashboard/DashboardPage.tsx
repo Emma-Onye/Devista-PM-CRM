@@ -243,7 +243,7 @@ export function DashboardPage() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 space-y-6 overflow-auto">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-auto">
       {/* Page header */}
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center">
@@ -519,8 +519,8 @@ export function DashboardPage() {
           ) : dealsClosingSoon.length === 0 ? (
             <EmptyState icon={Handshake} message="No deals closing in the next 30 days" />
           ) : (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <Table>
+            <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
+              <Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow className="bg-gray-50 hover:bg-gray-50">
                     <TableHead className="text-xs">Deal</TableHead>

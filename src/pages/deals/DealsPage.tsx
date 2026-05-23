@@ -313,37 +313,37 @@ export function DealsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shrink-0">
-        <div className="flex items-center gap-3">
-          <Handshake className="w-5 h-5 text-gray-500" />
-          <h1 className="text-lg font-semibold text-gray-900">Deals</h1>
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-white shrink-0 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Handshake className="w-5 h-5 text-gray-500 shrink-0" />
+          <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">Deals</h1>
           {!dealsLoading && (
-            <span className="text-xs font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+            <span className="text-xs font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-0.5 shrink-0">
               {deals.length}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* View toggle */}
           <div className="flex items-center rounded-md border border-gray-200 overflow-hidden">
             <button
-              className={cn('px-2.5 py-1.5 flex items-center gap-1.5 text-xs font-medium transition-colors',
+              className={cn('px-2 sm:px-2.5 py-1.5 flex items-center gap-1 sm:gap-1.5 text-xs font-medium transition-colors',
                 view === 'board' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50')}
               onClick={() => setView('board')}
             >
-              <LayoutGrid className="w-3.5 h-3.5" /> Board
+              <LayoutGrid className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Board</span>
             </button>
             <button
-              className={cn('px-2.5 py-1.5 flex items-center gap-1.5 text-xs font-medium transition-colors border-l border-gray-200',
+              className={cn('px-2 sm:px-2.5 py-1.5 flex items-center gap-1 sm:gap-1.5 text-xs font-medium transition-colors border-l border-gray-200',
                 view === 'table' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50')}
               onClick={() => setView('table')}
             >
-              <List className="w-3.5 h-3.5" /> Table
+              <List className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Table</span>
             </button>
           </div>
           <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"
             onClick={() => { resetForm(); setSheetOpen(true); }}>
-            <Plus className="w-3.5 h-3.5" /> Add Deal
+            <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Add Deal</span><span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>

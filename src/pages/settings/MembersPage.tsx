@@ -271,11 +271,11 @@ export function MembersPage() {
   };
 
   if (!activeWorkspace) {
-    return <div className="p-8 text-sm text-gray-400">No workspace selected.</div>;
+    return <div className="p-4 sm:p-8 text-sm text-gray-400">No workspace selected.</div>;
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Members</h1>

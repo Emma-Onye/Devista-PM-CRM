@@ -115,23 +115,23 @@ export function DocumentsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-200 bg-white shrink-0">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-sky-50 flex items-center justify-center">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-lg bg-sky-50 flex items-center justify-center shrink-0">
               <FileText className="w-4 h-4 text-sky-600" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Documents</h1>
-              <p className="text-xs text-gray-400">{docs.length} document{docs.length !== 1 ? 's' : ''}</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-bold text-gray-900 truncate">Documents</h1>
+              <p className="text-xs text-gray-400 hidden sm:block">{docs.length} document{docs.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <Input
-                className="pl-8 h-8 text-sm w-56"
-                placeholder="Search documents…"
+                className="pl-8 h-8 text-sm w-40 sm:w-56"
+                placeholder="Search…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -141,7 +141,7 @@ export function DocumentsPage() {
               className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white h-8"
               onClick={() => setDialogOpen(true)}
             >
-              <Plus className="w-3.5 h-3.5" /> New Document
+              <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">New Document</span><span className="sm:hidden">New</span>
             </Button>
           </div>
         </div>

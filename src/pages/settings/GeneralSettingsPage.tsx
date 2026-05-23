@@ -111,7 +111,7 @@ export function GeneralSettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl space-y-6">
+    <div className="p-4 sm:p-8 max-w-2xl space-y-6">
       <div>
         <h1 className="text-lg font-semibold text-gray-900">General Settings</h1>
         <p className="text-sm text-gray-500 mt-0.5">Manage your workspace name and branding.</p>

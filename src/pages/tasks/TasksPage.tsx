@@ -338,30 +338,30 @@ export function TasksPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-200 bg-white shrink-0">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
               <CheckSquare className="w-4 h-4 text-blue-600" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">My Tasks</h1>
-              <p className="text-xs text-gray-400">All tasks assigned to you</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-bold text-gray-900 truncate">My Tasks</h1>
+              <p className="text-xs text-gray-400 hidden sm:block">All tasks assigned to you</p>
             </div>
           </div>
           <Button
             size="sm"
-            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-8"
+            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-8 shrink-0"
             onClick={() => setAddOpen(true)}
           >
-            <Plus className="w-3.5 h-3.5" /> Add Task
+            <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Add Task</span><span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
 
       {/* Stat cards */}
-      <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 shrink-0">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50 shrink-0">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <StatCard label="Total Assigned" value={stats.total} />
           <StatCard label="Overdue" value={stats.overdue} valueClass="text-red-600" />
           <StatCard label="Due This Week" value={stats.thisWeek} valueClass="text-amber-600" />
@@ -370,7 +370,7 @@ export function TasksPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="px-6 py-3 border-b border-gray-100 bg-white shrink-0 flex flex-wrap items-center gap-2">
+      <div className="px-4 sm:px-6 py-3 border-b border-gray-100 bg-white shrink-0 flex flex-wrap items-center gap-2">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />

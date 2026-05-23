@@ -91,10 +91,12 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-screen bg-slate-900 flex flex-col z-50 transition-all duration-200 ease-in-out',
-          // Mobile: slide in/out
-          'max-md:translate-x-full max-md:w-64',
+          'fixed top-0 h-screen bg-slate-900 flex flex-col z-50 transition-all duration-200 ease-in-out',
+          // Mobile: slide in from left
+          'max-md:left-0 max-md:-translate-x-full max-md:w-64',
           mobileMenuOpen && 'max-md:translate-x-0',
+          // Desktop: always anchored left
+          'md:left-0',
           // Desktop
           'md:translate-x-0',
           sidebarCollapsed ? 'md:w-16' : 'md:w-64'

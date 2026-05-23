@@ -221,23 +221,23 @@ export function CompaniesPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shrink-0">
-        <div className="flex items-center gap-3">
-          <Building2 className="w-5 h-5 text-gray-500" />
-          <h1 className="text-lg font-semibold text-gray-900">Companies</h1>
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Building2 className="w-5 h-5 text-gray-500 shrink-0" />
+          <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">Companies</h1>
           {!isLoading && (
-            <span className="text-xs font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+            <span className="text-xs font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-0.5 shrink-0">
               {companies.length}
             </span>
           )}
         </div>
-        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-1.5" onClick={() => setSheetOpen(true)}>
-          <Plus className="w-3.5 h-3.5" /> Add Company
+        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-1.5 shrink-0" onClick={() => setSheetOpen(true)}>
+          <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Add Company</span><span className="sm:hidden">Add</span>
         </Button>
       </div>
 
       {/* Toolbar */}
-      <div className="px-6 py-3 border-b border-gray-100 bg-white shrink-0">
+      <div className="px-4 sm:px-6 py-3 border-b border-gray-100 bg-white shrink-0">
         <div className="relative max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
           <Input
@@ -250,7 +250,7 @@ export function CompaniesPage() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-x-auto overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center h-48">
             <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
@@ -266,7 +266,7 @@ export function CompaniesPage() {
             )}
           </div>
         ) : (
-          <Table>
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow className="bg-gray-50 hover:bg-gray-50">
                 <TableHead className="cursor-pointer select-none whitespace-nowrap" onClick={() => toggleSort('name')}>
@@ -351,8 +351,8 @@ export function CompaniesPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-white shrink-0">
-          <p className="text-xs text-gray-400">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-t border-gray-100 bg-white shrink-0">
+          <p className="text-xs text-gray-400 hidden sm:block">
             {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} of {sorted.length} companies
           </p>
           <div className="flex items-center gap-1">

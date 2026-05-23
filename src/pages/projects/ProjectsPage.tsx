@@ -168,24 +168,24 @@ export function ProjectsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shrink-0">
-        <div className="flex items-center gap-3">
-          <FolderKanban className="w-5 h-5 text-gray-500" />
-          <h1 className="text-lg font-semibold text-gray-900">Projects</h1>
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <FolderKanban className="w-5 h-5 text-gray-500 shrink-0" />
+          <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">Projects</h1>
           {!isLoading && (
-            <span className="text-xs font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+            <span className="text-xs font-medium text-gray-400 bg-gray-100 rounded-full px-2 py-0.5 shrink-0">
               {projects.length}
             </span>
           )}
         </div>
-        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"
+        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-1.5 shrink-0"
           onClick={() => { resetForm(); setDialogOpen(true); }}>
-          <Plus className="w-3.5 h-3.5" /> New Project
+          <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">New Project</span><span className="sm:hidden">New</span>
         </Button>
       </div>
 
       {/* Toolbar */}
-      <div className="px-6 py-3 border-b border-gray-100 bg-white shrink-0 flex items-center gap-3">
+      <div className="px-4 sm:px-6 py-3 border-b border-gray-100 bg-white shrink-0 flex flex-wrap items-center gap-2 sm:gap-3">
         <div className="relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
           <Input placeholder="Search projects…" value={search}
@@ -206,7 +206,7 @@ export function ProjectsPage() {
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-auto px-6 py-6">
+      <div className="flex-1 overflow-auto px-4 sm:px-6 py-4 sm:py-6">
         {isLoading ? (
           <div className="flex items-center justify-center h-48">
             <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />

@@ -217,31 +217,31 @@ export function AutomationsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-200 bg-white shrink-0">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
               <Zap className="w-4 h-4 text-amber-600" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Automations</h1>
-              <p className="text-xs text-gray-400">
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-bold text-gray-900 truncate">Automations</h1>
+              <p className="text-xs text-gray-400 hidden sm:block">
                 {rules.length} rule{rules.length !== 1 ? 's' : ''} · {rules.filter((r) => r.is_active).length} active
               </p>
             </div>
           </div>
           <Button
             size="sm"
-            className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white h-8"
+            className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white h-8 shrink-0"
             onClick={() => setWizardOpen(true)}
           >
-            <Plus className="w-3.5 h-3.5" /> Create Automation
+            <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Create Automation</span><span className="sm:hidden">Create</span>
           </Button>
         </div>
       </div>
 
       {/* Tabs + Toolbar */}
-      <div className="px-6 py-3 border-b border-gray-100 bg-white shrink-0 flex flex-wrap items-center gap-3">
+      <div className="px-4 sm:px-6 py-3 border-b border-gray-100 bg-white shrink-0 flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Tab switcher */}
         <div className="flex items-center bg-gray-100 rounded-lg p-0.5 gap-0.5 mr-2">
           <button
