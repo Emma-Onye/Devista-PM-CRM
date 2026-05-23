@@ -3,6 +3,7 @@ import { AppShell } from './components/shell/AppShell';
 import { AuthGuard } from './components/shell/AuthGuard';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { OnboardingPage } from './pages/onboarding/OnboardingPage';
 import { SelectWorkspacePage } from './pages/workspace/SelectWorkspacePage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   { path: '/signup', element: <RegisterPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
 
   // Protected: no workspace required
   {
