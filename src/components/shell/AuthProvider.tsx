@@ -91,6 +91,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Intercept password recovery — redirect to reset page before anything else
+      if (event === 'PASSWORD_RECOVERY') {
+        setSession(session);
+        if (window.location.pathname !== '/reset-password') {
+          window.location.replace('/reset-password');
+        }
+        return;
+      }
+
       setSession(session);
 
       if (session?.user) {
