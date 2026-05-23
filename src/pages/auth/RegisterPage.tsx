@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Eye, EyeOff, Layers } from 'lucide-react';
+
+const HCAPTCHA_SITEKEY = 'c486cd1a-b8b8-4d60-ad8e-9226b3a0760c';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -17,6 +20,8 @@ export function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,12 +50,19 @@ export function RegisterPage() {
       setError('Passwords do not match.');
       return;
     }
+    if (!captchaToken) {
+      setError('Please complete the CAPTCHA verification.');
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName } },
+      options: { data: { display_name: displayName }, captchaToken },
     });
+    // Reset captcha after each attempt so it can't be reused
+    captchaRef.current?.resetCaptcha();
+    setCaptchaToken(null);
     if (error) {
       setError(error.message);
     } else {
@@ -147,6 +159,15 @@ export function RegisterPage() {
               {confirmPassword && confirmPassword !== password && (
                 <p className="text-xs text-red-500">Passwords do not match</p>
               )}
+            </div>
+
+            <div className="flex justify-center">
+              <HCaptcha
+                ref={captchaRef}
+                sitekey={HCAPTCHA_SITEKEY}
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+              />
             </div>
 
             {error && (

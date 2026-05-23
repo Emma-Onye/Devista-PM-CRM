@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Eye, EyeOff, Layers } from 'lucide-react';
+
+const HCAPTCHA_SITEKEY = 'c486cd1a-b8b8-4d60-ad8e-9226b3a0760c';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -16,12 +19,24 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!captchaToken) {
+      setError('Please complete the CAPTCHA verification.');
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken },
+    });
+    captchaRef.current?.resetCaptcha();
+    setCaptchaToken(null);
     if (error) {
       setError(error.message);
     } else {
@@ -35,11 +50,18 @@ export function LoginPage() {
       setError('Enter your email address first, then click "Forgot password"');
       return;
     }
+    if (!captchaToken) {
+      setError('Please complete the CAPTCHA verification first.');
+      return;
+    }
     setError('');
     setResetLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/login`,
+      captchaToken,
     });
+    captchaRef.current?.resetCaptcha();
+    setCaptchaToken(null);
     if (error) {
       setError(error.message);
     } else {
@@ -109,6 +131,15 @@ export function LoginPage() {
               >
                 {resetLoading ? 'Sending...' : 'Forgot password?'}
               </button>
+            </div>
+
+            <div className="flex justify-center">
+              <HCaptcha
+                ref={captchaRef}
+                sitekey={HCAPTCHA_SITEKEY}
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+              />
             </div>
 
             {error && (
